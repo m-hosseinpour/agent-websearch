@@ -101,7 +101,11 @@ websearch doctor --live     # token, xray, pool, key and tunnel canary
 `/healthz` answers without a token; every other route returns `401` until the Bearer header is
 present.
 
-**5. Install as a user service** (Linux, systemd):
+**5. Optionally keep it running.** The server is a plain foreground command and nothing in the
+project requires a supervisor; this step only saves you from starting it yourself. Pick whichever
+fits your OS, or skip it and run `websearch serve` in a terminal when you need it.
+
+*Linux, systemd user unit:*
 
 ```bash
 mkdir -p ~/.config/systemd/user
@@ -112,6 +116,34 @@ systemctl --user enable --now agent-websearch
 
 If you installed with a virtualenv instead of `uv tool`, change `ExecStart` in the unit to
 `%h/path/to/agent-websearch/.venv/bin/websearch serve`.
+
+*macOS, launchd agent* (`launchd` has no `%h`, so the absolute path is written in):
+
+```bash
+BIN=$(command -v websearch)
+mkdir -p ~/Library/LaunchAgents
+cat > ~/Library/LaunchAgents/ai.agent-websearch.plist <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>ai.agent-websearch</string>
+  <key>ProgramArguments</key>
+  <array><string>$BIN</string><string>serve</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+</dict>
+</plist>
+PLIST
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/ai.agent-websearch.plist
+```
+
+The CLI reads `~/.config/agent-websearch/env` itself, so launchd needs no `EnvironmentFile`
+equivalent. Undo with `launchctl bootout gui/$(id -u)/ai.agent-websearch`.
+
+*Windows:* run `websearch serve` in a terminal, or point a logon task (Task Scheduler) at
+`websearch.exe serve`. The tunnel is POSIX-only (see [Limitations](#limitations)), so keep
+`egress.mode = "direct"` there.
 
 ## Configuration
 
@@ -142,7 +174,7 @@ AGENT_WEBSEARCH_HOME=/path/to/home   # all relative paths resolve under this
 |---|---|
 | `config.toml` | Configuration |
 | `token` | Bearer token, created automatically, mode `0600` |
-| `env` | Optional `TINYFISH_API_KEY=...` file read by the CLI and the systemd unit |
+| `env` | Optional `TINYFISH_API_KEY=...` file, read by the CLI and the server at startup |
 | `pool.txt` | One `vless://` or `trojan://` link per line; the first healthy one wins |
 | `blocked-domains.txt` | Domains that must always use the tunnel; learned automatically, editable by hand |
 | `state.json` | Last good proxy config and per-link cooldowns |
@@ -173,7 +205,7 @@ URL that ignores scheme, `www.`, fragments and tracking parameters, then trimmed
 
 A domain is added to `blocked-domains.txt` only after a direct attempt failed **and** the same
 request succeeded through the tunnel. Failures alone are not learned: a host that is simply down
-would otherwise be routed through the tunnel forever. Editing the list by hand requires a service
+would otherwise be routed through the tunnel forever. Editing the list by hand requires a server
 restart.
 
 ## Usage
@@ -337,6 +369,9 @@ Three decisions worth knowing:
   route is reported as `blocked` and is not learned.
 - **Search only.** Page fetching, browser rendering and PDF extraction are intentionally out of
   scope.
+- **The tunnel is POSIX-only.** Starting, probing and stopping xray rely on POSIX process control
+  (`start_new_session`, `os.killpg`), so on Windows run with `egress.mode = "direct"`; the HTTP
+  surface itself is plain uvicorn and does not need the tunnel.
 - The service binds to loopback by design; exposing it to a network requires a reverse proxy and
   is not a supported configuration.
 
@@ -367,7 +402,8 @@ opens sockets itself; it receives `fetch` from the egress layer so routing stays
 - Routes other than `/healthz` require `Authorization: Bearer <token>`; comparison is
   constant-time. A missing token file is generated on first start.
 - Credential-bearing files (`token`, `env`, `pool.txt`, `state.json`, `gateway.json`,
-  `tunnel.log`) are written with mode `0600`; the systemd unit sets `UMask=0077`.
+  `tunnel.log`) are written with mode `0600` by the code itself, however the process is started;
+  the optional systemd unit adds `UMask=0077` on top.
 - HTTP clients set `trust_env=False`, so an ambient `HTTPS_PROXY` cannot silently reroute
   traffic.
 - API keys are read from the environment file at request time and are never written to logs or

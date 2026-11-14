@@ -31,9 +31,11 @@ def _env_file_path() -> Path:
 
 
 def _load_env_file(path: Path) -> None:
-    """Let the CLI see the same EnvironmentFile the systemd unit loads.
+    """Let the CLI see the same variables the server would.
 
-    Explicit environment variables win; the file fills only what is missing.
+    The CLI reads this file itself, so no supervisor needs to pass an
+    EnvironmentFile; explicit environment variables win and the file fills only
+    what is missing.
     """
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
@@ -143,7 +145,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
     print("next:")
     print(f"  websearch serve                      # http://{config.server.host}:{config.server.port}")
     print(f"  websearch search \"query\" --count 5")
-    print("  systemctl --user enable --now agent-websearch   # after installing the unit")
+    print("  keep it running (optional): deploy/agent-websearch.service (Linux) or a launchd agent (macOS)")
     return 0
 
 

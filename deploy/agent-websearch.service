@@ -1,5 +1,6 @@
 [Unit]
 Description=agent-websearch MCP search service (TinyFish + Mwmbl + DDG)
+# Optional convenience wrapper: `websearch serve` in a terminal works without this unit.
 After=network.target
 
 [Service]

@@ -10,7 +10,7 @@
 - هر دو مسیر یک مدل پاسخ می‌دهند؛ چیزی که curl می‌بیند همان چیزی است که عامل می‌گیرد.
 
 طراحی و دلیل تصمیم‌ها در پوشهٔ پژوهشی `harness-comparision` است:
-`research/G-mcp-search-tool-design.md`. محل محلی این ریپو: `~/workspace/websearch`.
+`research/G-mcp-search-tool-design.md`. محل محلی این ریپو: `~/workspace/agent-websearch`.
 
 ## نیازها
 
@@ -95,7 +95,7 @@ systemctl --user enable --now websearch
 ## نصب
 
 ```bash
-cd websearch
+cd agent-websearch
 uv tool install .          # مسیر اصلی: فرمان websearch در ~/.local/bin
 ```
 
@@ -104,7 +104,7 @@ uv tool install .          # مسیر اصلی: فرمان websearch در ~/.loc
 ```bash
 uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python -e .
-# ExecStart=%h/path/to/websearch/.venv/bin/websearch serve
+# ExecStart=%h/path/to/agent-websearch/.venv/bin/websearch serve
 ```
 
 برای تست: `uv pip install --python .venv/bin/python pytest pytest-asyncio`

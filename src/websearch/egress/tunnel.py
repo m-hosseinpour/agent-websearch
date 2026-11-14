@@ -78,7 +78,7 @@ def _asset_name() -> str:
 
 
 def _http_get(url: str, timeout: int = 180) -> bytes:
-    request = urllib.request.Request(url, headers={"user-agent": "websearch/0.1"})
+    request = urllib.request.Request(url, headers={"user-agent": "agent-websearch/0.1"})
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read()
 

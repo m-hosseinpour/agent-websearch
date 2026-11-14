@@ -55,7 +55,7 @@ class MwmblBackend:
 
         response = await fetch(
             self.url + "?" + urllib.parse.urlencode({"s": query}),
-            headers={"Accept": "application/json", "User-Agent": "websearch/0.1"},
+            headers={"Accept": "application/json", "User-Agent": "agent-websearch/0.1"},
         )
         try:
             payload = response.json()

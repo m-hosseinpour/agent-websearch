@@ -1,0 +1,48 @@
+# Copy to ~/.config/websearch/config.toml and edit.
+# Precedence: built-in defaults < this file < WEBSEARCH_SECTION__KEY env vars.
+
+[server]
+host = "127.0.0.1"          # loopback only; the token is the second lock
+port = 7971
+token_file = "token"        # relative paths resolve under WEBSEARCH_HOME
+auto_token = true           # generate the token on first start if missing
+
+[search]
+default_count = 10
+max_count = 30
+default_lang = "auto"       # auto detects Persian script, else English
+cache_ttl = 300             # seconds; 0 disables the cache
+backend_timeout = 10        # ceiling for one route attempt
+
+[backends.ddg]
+enabled = true
+min_interval = 2.0          # conservative on purpose: DDG bans fast automated use
+max_concurrency = 1
+
+[backends.mwmbl]
+enabled = true
+min_interval = 0.5
+max_concurrency = 1
+
+[egress]
+mode = "auto"               # auto | direct | tunnel
+proxy_port = 1081
+retry_transient = 1         # retries per route, transient failures only
+request_timeout = 18        # total budget for one host across routes
+tunnel_reserve = 6          # seconds kept back for the tunnel attempt
+connection_timeout = 5
+learned_file = "blocked-domains.txt"
+
+[egress.tunnel]
+# Empty: autodetect WEBSEARCH_XRAY_BIN, XRAY_BIN, PATH, v2rayN, local cache,
+# then download an official Xray release once (SHA-256 checked).
+binary = ""
+pool_file = "pool.txt"
+canary = "https://www.youtube.com/"
+auto_start = true
+start_attempts = 5
+start_timeout = 60
+port_timeout = 5
+healthy_ttl = 60
+probe_attempts = 3
+dead_cooldown = 90

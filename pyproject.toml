@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "websearch-mcp"
+version = "0.1.0"
+description = "Local HTTP/MCP search service with explicit per-backend errors"
+requires-python = ">=3.11"
+dependencies = [
+  "mcp>=2.3,<3",
+  "httpx>=0.27",
+  "uvicorn>=0.30",
+  "starlette>=1.0",
+  "pydantic>=2.7",
+]
+
+[project.scripts]
+websearch = "websearch.cli:main"
+
+[project.entry-points."websearch.backends"]
+ddg = "websearch.backends.ddg:DdgBackend"
+mwmbl = "websearch.backends.mwmbl:MwmblBackend"
+
+[dependency-groups]
+dev = ["pytest>=8", "pytest-asyncio>=1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/websearch"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

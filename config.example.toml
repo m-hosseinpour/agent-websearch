@@ -1,10 +1,10 @@
-# Copy to ~/.config/websearch/config.toml and edit.
-# Precedence: built-in defaults < this file < WEBSEARCH_SECTION__KEY env vars.
+# Copy to ~/.config/agent-websearch/config.toml and edit.
+# Precedence: built-in defaults < this file < AGENT_WEBSEARCH_SECTION__KEY env vars.
 
 [server]
 host = "127.0.0.1"          # loopback only; the token is the second lock
 port = 7971
-token_file = "token"        # relative paths resolve under WEBSEARCH_HOME
+token_file = "token"        # relative paths resolve under AGENT_WEBSEARCH_HOME
 auto_token = true           # generate the token on first start if missing
 
 [search]
@@ -16,7 +16,7 @@ backend_timeout = 10        # ceiling for one route attempt
 
 [backends.tinyfish]
 # Free keyed API: 30 requests/min, 500/hour, 12,000/day. Put the key in
-# ~/.config/websearch/env as TINYFISH_API_KEY=... (mode 0600), then set enabled.
+# ~/.config/agent-websearch/env as TINYFISH_API_KEY=... (mode 0600), then set enabled.
 enabled = false
 min_interval = 2.0          # 30/min
 max_concurrency = 1
@@ -44,7 +44,7 @@ connection_timeout = 5
 learned_file = "blocked-domains.txt"
 
 [egress.tunnel]
-# Empty: autodetect WEBSEARCH_XRAY_BIN, XRAY_BIN, PATH, v2rayN, local cache,
+# Empty: autodetect AGENT_WEBSEARCH_XRAY_BIN, XRAY_BIN, PATH, v2rayN, local cache,
 # then download an official Xray release once (SHA-256 checked).
 binary = ""
 pool_file = "pool.txt"

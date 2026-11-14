@@ -1,7 +1,7 @@
 """Configuration: defaults, a TOML file, and nested env overrides.
 
 Paths in the config file may be absolute, start with ``~``, or be relative to the
-service home (``~/.config/websearch`` by default, ``WEBSEARCH_HOME`` overrides it).
+service home (``~/.config/agent-websearch`` by default, ``AGENT_WEBSEARCH_HOME`` overrides it).
 Relative-to-home is the default so a test can relocate everything with one env var.
 """
 
@@ -15,11 +15,11 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any
 
-ENV_PREFIX = "WEBSEARCH_"
+ENV_PREFIX = "AGENT_WEBSEARCH_"
 
 
 def _home() -> Path:
-    return Path(os.environ.get(f"{ENV_PREFIX}HOME") or "~/.config/websearch").expanduser()
+    return Path(os.environ.get(f"{ENV_PREFIX}HOME") or "~/.config/agent-websearch").expanduser()
 
 
 def _path(value: str | None, home: Path) -> Path | None:
@@ -147,7 +147,7 @@ def _coerce(raw: str, example: Any) -> Any:
 
 
 def env_overrides(data: dict[str, Any]) -> dict[str, Any]:
-    """Turn WEBSEARCH_SECTION__KEY=value into nested overrides.
+    """Turn AGENT_WEBSEARCH_SECTION__KEY=value into nested overrides.
 
     Types are taken from the value already in the tree, so ``PORT=8000`` becomes an
     int while ``HOST`` stays a string. Unknown keys are ignored.
@@ -235,7 +235,7 @@ class Config:
             if token:
                 return token
         if not self.server.auto_token:
-            raise RuntimeError(f"token missing: {path} (set WEBSEARCH_TOKEN or create the file)")
+            raise RuntimeError(f"token missing: {path} (set AGENT_WEBSEARCH_TOKEN or create the file)")
         token = secrets.token_urlsafe(32)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(token + "\n", encoding="utf-8")
@@ -287,7 +287,7 @@ def _build(cls, data: dict[str, Any], section: str):
 
 
 DEFAULT_CONFIG_TOML = """\
-# websearch configuration. Environment overrides: WEBSEARCH_SECTION__KEY=value
+# websearch configuration. Environment overrides: AGENT_WEBSEARCH_SECTION__KEY=value
 [server]
 host = "127.0.0.1"
 port = 7971
@@ -301,7 +301,7 @@ backend_timeout = 10
 
 [backends.tinyfish]
 # Free keyed API: 30 requests/min, 500/hour, 12,000/day. Put the key in
-# ~/.config/websearch/env as TINYFISH_API_KEY=... (mode 0600), then set enabled.
+# ~/.config/agent-websearch/env as TINYFISH_API_KEY=... (mode 0600), then set enabled.
 enabled = false
 min_interval = 2.0         # 30/min
 max_concurrency = 1

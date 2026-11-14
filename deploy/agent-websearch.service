@@ -1,0 +1,14 @@
+[Unit]
+Description=agent-websearch MCP search service (TinyFish + Mwmbl + DDG)
+After=network.target
+
+[Service]
+ExecStart=%h/.local/bin/websearch serve
+# Optional: AGENT_WEBSEARCH_TOKEN=... or any AGENT_WEBSEARCH_SECTION__KEY override.
+EnvironmentFile=-%h/.config/agent-websearch/env
+UMask=0077
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

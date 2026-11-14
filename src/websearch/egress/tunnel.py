@@ -5,7 +5,7 @@ deliberate difference: this inbound carries **no domain routing rules**. The
 proxy is a plain pipe, so all routing decisions stay in ``router.py`` where the
 learned list is. Rotation = restart xray with another outbound.
 
-Data lives next to the rest of the service (``WEBSEARCH_HOME``):
+Data lives next to the rest of the service (``AGENT_WEBSEARCH_HOME``):
   pool.txt     one vless:// or trojan:// link per line, top tried first
   state.json   last good config, dead cooldowns
   gateway.json generated xray config (do not edit by hand)
@@ -36,7 +36,7 @@ from pathlib import Path
 from ..config import Config
 
 SCAN_TIMEOUT = 6
-XRAY_VERSION = os.environ.get("WEBSEARCH_XRAY_VERSION") or "26.10.31"
+XRAY_VERSION = os.environ.get("AGENT_WEBSEARCH_XRAY_VERSION") or "26.10.31"
 LOG_MAX_BYTES = 2_000_000
 
 
@@ -73,7 +73,7 @@ def _asset_name() -> str:
     elif machine.startswith("armv6"):
         arch = "arm32-v6"
     else:
-        raise TunnelUnavailable(f"no xray build for {os.name}/{machine}; set WEBSEARCH_XRAY_BIN")
+        raise TunnelUnavailable(f"no xray build for {os.name}/{machine}; set AGENT_WEBSEARCH_XRAY_BIN")
     return f"Xray-{osname}-{arch}.zip"
 
 
@@ -117,7 +117,7 @@ def download_xray(config: Config) -> str:
     try:
         version, archive, digest_text = _release_files(XRAY_VERSION, asset)
     except (OSError, urllib.error.URLError) as exc:
-        raise TunnelUnavailable(f"xray download failed ({exc}); set WEBSEARCH_XRAY_BIN") from exc
+        raise TunnelUnavailable(f"xray download failed ({exc}); set AGENT_WEBSEARCH_XRAY_BIN") from exc
     expected = re.search(r"SHA2-256=\s*([0-9a-f]{64})", digest_text)
     if expected is None or hashlib.sha256(archive).hexdigest() != expected.group(1):
         raise TunnelUnavailable("downloaded xray archive failed its SHA-256 check")
@@ -134,7 +134,7 @@ def download_xray(config: Config) -> str:
 
 
 def find_binary(config: Config) -> str | None:
-    env = os.environ.get("WEBSEARCH_XRAY_BIN") or os.environ.get("XRAY_BIN")
+    env = os.environ.get("AGENT_WEBSEARCH_XRAY_BIN") or os.environ.get("XRAY_BIN")
     if env and Path(env).exists():
         return env
     on_path = shutil.which("xray")

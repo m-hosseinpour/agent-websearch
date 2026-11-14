@@ -17,9 +17,9 @@
 - Python 3.11 یا بالاتر
 - `uv` (یا pip)
 - xray — اگر نباشد، اولین درخواست پروکسی‌شده یک نسخهٔ رسمی را دانلود و با SHA-256
-  بررسی می‌کند. اگر از قبل دارید، با `WEBSEARCH_XRAY_BIN` یا `XRAY_BIN` معرفی کنید.
+  بررسی می‌کند. اگر از قبل دارید، با `AGENT_WEBSEARCH_XRAY_BIN` یا `XRAY_BIN` معرفی کنید.
 - کلید TinyFish برای بک‌اند اصلی (رایگان، بدون کارت): از
-  <https://agent.tinyfish.ai/api-keys> بسازید و در `~/.config/websearch/env` بگذارید.
+  <https://agent.tinyfish.ai/api-keys> بسازید و در `~/.config/agent-websearch/env` بگذارید.
 
 ## شروع سریع (از صفر تا کارکرد)
 
@@ -46,13 +46,13 @@ websearch --help          # فهرست فرمان‌ها را چاپ می‌کن
 websearch setup
 ```
 
-`~/.config/websearch/` ساخته می‌شود: `config.toml`، `token` (حالت ۰۶۰۰) و `pool.txt`.
+`~/.config/agent-websearch/` ساخته می‌شود: `config.toml`، `token` (حالت ۰۶۰۰) و `pool.txt`.
 
 **۴. کلید TinyFish:**
 
 ```bash
-printf 'TINYFISH_API_KEY=%s\n' 'sk-tinyfish-...' > ~/.config/websearch/env
-chmod 600 ~/.config/websearch/env
+printf 'TINYFISH_API_KEY=%s\n' 'sk-tinyfish-...' > ~/.config/agent-websearch/env
+chmod 600 ~/.config/agent-websearch/env
 ```
 
 و در `config.toml` روشنش کنید:
@@ -76,7 +76,7 @@ enabled = false
 ```bash
 websearch serve            # ترمینال ۱
 curl -s http://127.0.0.1:7971/healthz
-TOKEN=$(cat ~/.config/websearch/token)
+TOKEN=$(cat ~/.config/agent-websearch/token)
 curl -s "http://127.0.0.1:7971/search?q=test&count=3" -H "Authorization: Bearer $TOKEN"
 websearch doctor --live    # توکن، xray، pool، کلید TinyFish و canary تونل
 ```
@@ -87,9 +87,9 @@ websearch doctor --live    # توکن، xray، pool، کلید TinyFish و canar
 
 ```bash
 mkdir -p ~/.config/systemd/user
-cp deploy/websearch.service ~/.config/systemd/user/
+cp deploy/agent-websearch.service ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now websearch
+systemctl --user enable --now agent-websearch
 ```
 
 ## نصب
@@ -122,7 +122,7 @@ websearch setup
 websearch setup --seed-from ~/.config/proxy-tunnel/pool.txt
 ```
 
-این فرمان در `~/.config/websearch/` می‌سازد:
+این فرمان در `~/.config/agent-websearch/` می‌سازد:
 
 | فایل | کار |
 |---|---|
@@ -133,8 +133,8 @@ websearch setup --seed-from ~/.config/proxy-tunnel/pool.txt
 برای TinyFish یک فایل env با حالت ۰۶۰۰ بسازید (یونیت systemd همین را می‌خواند):
 
 ```bash
-printf 'TINYFISH_API_KEY=%s\n' 'sk-tinyfish-...' > ~/.config/websearch/env
-chmod 600 ~/.config/websearch/env
+printf 'TINYFISH_API_KEY=%s\n' 'sk-tinyfish-...' > ~/.config/agent-websearch/env
+chmod 600 ~/.config/agent-websearch/env
 ```
 
 سپس در `config.toml` بک‌اند را روشن کنید. خود `websearch serve/search/doctor` هم همین
@@ -168,23 +168,23 @@ websearch serve --port 7972
 
 ```bash
 mkdir -p ~/.config/systemd/user
-cp deploy/websearch.service ~/.config/systemd/user/
+cp deploy/agent-websearch.service ~/.config/systemd/user/
 # اگر با venv نصب کرده‌اید، ExecStart را در unit به همان مسیر .venv/bin اصلاح کنید.
 systemctl --user daemon-reload
-systemctl --user enable --now websearch
-journalctl --user -u websearch -f
+systemctl --user enable --now agent-websearch
+journalctl --user -u agent-websearch -f
 ```
 
 ## تنظیمات
 
-ترتیب اولویت: `DEFAULT` در کد < `config.toml` < env با الگوی `WEBSEARCH_SECTION__KEY`.
+ترتیب اولویت: `DEFAULT` در کد < `config.toml` < env با الگوی `AGENT_WEBSEARCH_SECTION__KEY`.
 
 ```bash
-WEBSEARCH_SERVER__PORT=8000
-WEBSEARCH_SEARCH__CACHE_TTL=0
-WEBSEARCH_EGRESS__MODE=tunnel        # auto | direct | tunnel
-WEBSEARCH_TOKEN=...                  # جای فایل توکن
-WEBSEARCH_HOME=/path/to/home         # همهٔ مسیرهای نسبی زیر این می‌روند
+AGENT_WEBSEARCH_SERVER__PORT=8000
+AGENT_WEBSEARCH_SEARCH__CACHE_TTL=0
+AGENT_WEBSEARCH_EGRESS__MODE=tunnel        # auto | direct | tunnel
+AGENT_WEBSEARCH_TOKEN=...                  # جای فایل توکن
+AGENT_WEBSEARCH_HOME=/path/to/home         # همهٔ مسیرهای نسبی زیر این می‌روند
 ```
 
 ### بک‌اندها
@@ -241,7 +241,7 @@ websearch status
         "type": "remote",
         "oauth": false,
         "url": "http://127.0.0.1:7971/mcp",
-        "headers": { "Authorization": "Bearer <token از ~/.config/websearch/token>" }
+        "headers": { "Authorization": "Bearer <token از ~/.config/agent-websearch/token>" }
       }
     }
   }
@@ -257,7 +257,7 @@ websearch status
 ## نمونهٔ REST
 
 ```bash
-TOKEN=$(cat ~/.config/websearch/token)
+TOKEN=$(cat ~/.config/agent-websearch/token)
 curl -s "http://127.0.0.1:7971/search?q=%D8%AA%D8%AD%D9%82%DB%8C%D9%82&count=5" \
   -H "Authorization: Bearer $TOKEN"
 ```
@@ -307,7 +307,7 @@ websearch doctor --live             # توکن، xray، pool، کلید TinyFish
   یعنی ۱۰ نتیجه از این بک‌اند. سهمیهٔ رایگان ۳۰/دقیقه، ۵۰۰/ساعت و ۱۲٬۰۰۰/روز است
   (ریست ۰۰:۰۰ UTC)؛ بعد از آن با wallet خالی `quota` می‌گیرید. نتایج خبری
   (`domain_type=news`) اسنیپت نمی‌دهند و این بک‌اند publisher/date را جای آن می‌گذارد.
-  کلید در `~/.config/websearch/env` است و باید در صورت چرخش به‌روز شود.
+  کلید در `~/.config/agent-websearch/env` است و باید در صورت چرخش به‌روز شود.
 - **DDG:** بدون کلید ولی از این شبکه کپچا می‌دهد؛ در نصب این ماشین خاموش است، هرچند
   `setup` پیش‌فرض روشنش می‌نویسد. اگر در پنجرهٔ سالم روشنش کردید، `min_interval=2s` و یک
   درخواست هم‌زمان را نگه دارید.

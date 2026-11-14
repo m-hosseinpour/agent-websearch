@@ -26,7 +26,7 @@ LOOPBACK = {"127.0.0.1", "localhost", "::1"}
 
 
 def _env_file_path() -> Path:
-    home = Path(os.environ.get("WEBSEARCH_HOME") or "~/.config/websearch").expanduser()
+    home = Path(os.environ.get("AGENT_WEBSEARCH_HOME") or "~/.config/agent-websearch").expanduser()
     return home / "env"
 
 
@@ -104,7 +104,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
         mode = oct(token_path.stat().st_mode & 0o777)
         print(f"token             : {token_path} (mode {mode})")
     else:
-        print("token             : from WEBSEARCH_TOKEN (no file written)")
+        print("token             : from AGENT_WEBSEARCH_TOKEN (no file written)")
 
     pool_path = config.pool_path
     if args.seed_from:
@@ -143,7 +143,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
     print("next:")
     print(f"  websearch serve                      # http://{config.server.host}:{config.server.port}")
     print(f"  websearch search \"query\" --count 5")
-    print("  systemctl --user enable --now websearch   # after installing the unit")
+    print("  systemctl --user enable --now agent-websearch   # after installing the unit")
     return 0
 
 
@@ -224,7 +224,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         line(
             "PASS" if key else "FAIL",
             f"tinyfish: {API_KEY_ENV} "
-            + ("set" if key else "missing (put it in ~/.config/websearch/env)"),
+            + ("set" if key else "missing (put it in ~/.config/agent-websearch/env)"),
         )
 
     if args.live:

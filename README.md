@@ -8,7 +8,8 @@
 - **سلامت:** `GET /healthz` (بدون توکن)
 - هر دو مسیر یک مدل پاسخ می‌دهند؛ چیزی که curl می‌بیند همان چیزی است که عامل می‌گیرد.
 
-طراحی و دلیل تصمیم‌ها: `../research/G-mcp-search-tool-design.md`.
+طراحی و دلیل تصمیم‌ها در مخزن پژوهشی `harness-comparision` است:
+`research/G-mcp-search-tool-design.md`. محل محلی این ریپو: `~/workspace/websearch-mcp`.
 
 ## نیازها
 
@@ -34,9 +35,10 @@ uv pip install --python .venv/bin/python -e .
 
 برای تست: `uv pip install --python .venv/bin/python pytest pytest-asyncio`
 
-> این پوشه داخل مخزن `harness-comparision` است. اگر مخزن جابه‌جا شد، نصب editable را
-> دوباره اجرا کنید (`uv pip install --python .venv/bin/python -e .`)؛ وگرنه venv هنوز
-> به مسیر قدیمی اشاره می‌کند و تست‌ها با `ModuleNotFoundError` می‌افتند.
+> این پوشه ریپوی مستقل خودش را دارد (نه زیرمجموعهٔ `harness-comparision`). اگر پوشه
+> جابه‌جا شد، نصب editable را دوباره اجرا کنید
+> (`uv pip install --python .venv/bin/python -e .`)؛ وگرنه venv هنوز به مسیر قدیمی
+> اشاره می‌کند و تست‌ها با `ModuleNotFoundError` می‌افتند.
 
 ## راه‌اندازی اولیه
 

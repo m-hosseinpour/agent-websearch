@@ -8,7 +8,7 @@
 - **سلامت:** `GET /healthz` (بدون توکن)
 - هر دو مسیر یک مدل پاسخ می‌دهند؛ چیزی که curl می‌بیند همان چیزی است که عامل می‌گیرد.
 
-طراحی و دلیل تصمیم‌ها در مخزن پژوهشی `harness-comparision` است:
+طراحی و دلیل تصمیم‌ها در پوشهٔ پژوهشی `harness-comparision` است:
 `research/G-mcp-search-tool-design.md`. محل محلی این ریپو: `~/workspace/websearch-mcp`.
 
 ## نیازها

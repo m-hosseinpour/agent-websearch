@@ -248,7 +248,7 @@ def _live_checks(config: Config) -> list[tuple[str, str]]:
             response = await client.get(
                 "https://api.mwmbl.org/api/v1/search/",
                 params={"s": "test"},
-                headers={"User-Agent": "websearch-mcp/0.1"},
+                headers={"User-Agent": "websearch/0.1"},
             )
             return response.status_code
 

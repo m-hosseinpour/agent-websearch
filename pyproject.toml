@@ -3,7 +3,7 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "websearch-mcp"
+name = "websearch"
 version = "0.1.0"
 description = "Local HTTP/MCP search service with explicit per-backend errors"
 requires-python = ">=3.11"

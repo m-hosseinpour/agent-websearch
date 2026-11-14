@@ -39,6 +39,8 @@ Renaming one without the other breaks clients or scripts. Change both only with 
 - Backends never open sockets; they receive `fetch` from `Egress`.
 - The service is a local singleton: cache, breaker and rate limiters are in memory. Do not add
   cross-process state without a reason.
+- Tunnel lifecycle is POSIX-only (`os.killpg`, `/proc`, pidfile). Windows supports direct egress
+  only; do not pretend otherwise with a stop path that cannot work.
 
 ## Changing things
 
@@ -63,8 +65,10 @@ Renaming one without the other breaks clients or scripts. Change both only with 
   with the token. `websearch doctor` checks config, token, xray, pool and key offline; `--live`
   adds an Mwmbl call and the tunnel canary.
 - An editable install pins the checkout path; reinstall it after moving the repository.
-- The service runs as a systemd user unit. After changing code it loads, restart it
-  (`systemctl --user restart agent-websearch`) and check `/healthz`.
+- No supervisor is required: `websearch serve` is plain uvicorn, and the tunnel starts lazily
+  from whichever process makes the first proxied request. If a user unit
+  (`agent-websearch.service`) or another supervisor is running it, restart that after loading new
+  code and check `/healthz`.
 
 ## Docs and releases
 

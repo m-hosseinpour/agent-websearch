@@ -60,7 +60,7 @@ websearch setup --seed-from ~/.config/proxy-tunnel/pool.txt
 
 | فایل | کار |
 |---|---|
-| `blocked-domains.txt` | اولین دامنه‌ای که یاد گرفته شود |
+| `blocked-domains.txt` | دامنه‌هایی که باید فقط از تونل بروند؛ خودکار یاد گرفته می‌شود و قابل ویرایش دستی است (بعد از ویرایش restart لازم است) |
 | `state.json` | اولین چرخش تونل |
 | `gateway.json` | اولین استارت xray |
 | `tunnel.log` | اولین استارت xray |
@@ -106,8 +106,10 @@ WEBSEARCH_HOME=/path/to/home         # همهٔ مسیرهای نسبی زیر �
 فقط اگر شکست مسیر خورد (timeout/reset/DNS/403/451) یک‌بار تونل. اگر تونل جواب داد، دامنه
 با تاریخ و دلیل به لیست اضافه می‌شود تا دفعهٔ بعد مستقیم تلاش نشود.
 
-کپچا و صفحهٔ بلاک **مسیر را عوض نمی‌کنند** (همان IP خروجی است)؛ آن‌ها خطای بک‌اند
-هستند و breaker را باز می‌کنند. کنترل دستی:
+کپچا و صفحهٔ بلاک به‌طور خودکار مسیر را عوض نمی‌کنند؛ خطای بک‌اند هستند و breaker
+را باز می‌کنند. اگر مسیر مستقیم کپچا می‌گیرد ولی تونل جواب می‌دهد (مثل DDG در این
+شبکه)، دامنه را دستی در `blocked-domains.txt` بگذارید تا همیشه از تونل برود؛ بعد از
+ویرایش، سرویس را restart کنید. کنترل دستی:
 
 ```bash
 websearch tunnel up|down|status
@@ -116,19 +118,25 @@ websearch status
 
 ## اتصال MCP
 
-کلاینت باید URL و هدر توکن را بداند. نمونهٔ opencode (پس از تست در سشن واقعی):
+کلاینت باید URL و هدر توکن را بداند. نمونهٔ OpenCode v2 (تست‌شده در سشن واقعی):
 
 ```jsonc
 {
   "mcp": {
-    "websearch": {
-      "type": "remote",
-      "url": "http://127.0.0.1:7971/mcp",
-      "headers": { "Authorization": "Bearer <token از ~/.config/websearch/token>" }
+    "servers": {
+      "websearch": {
+        "type": "remote",
+        "oauth": false,
+        "url": "http://127.0.0.1:7971/mcp",
+        "headers": { "Authorization": "Bearer <token از ~/.config/websearch/token>" }
+      }
     }
   }
 }
 ```
+
+`oauth: false` لازم است؛ وگرنه OpenCode برای سرور remote به‌طور پیش‌فرض OAuth را امتحان
+می‌کند. سرورهای محلی (stdio) همچنان زیر کلید `mcp.servers` می‌آیند، نه مستقیم زیر `mcp`.
 
 ابزار `search` سه پارامتر دارد: `query` (لازم)، `count` (پیش‌فرض ۱۰، سقف ۳۰)،
 `lang` (`auto` پیش‌فرض؛ برای فارسی `fa`، انگلیسی `en`، یا کد منطقه‌ای DDG مثل `de-de`).

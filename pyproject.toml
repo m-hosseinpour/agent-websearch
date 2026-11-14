@@ -5,7 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "agent-websearch"
 version = "0.1.0"
-description = "Local HTTP/MCP search service with explicit per-backend errors"
+description = "Local web-search service for agents: MCP and REST, pluggable backends, per-backend errors, tunnel-aware egress"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Mahdi Hosseinpour" }]
+keywords = ["mcp", "web-search", "search", "agents", "xray", "proxy"]
 requires-python = ">=3.11"
 dependencies = [
   "mcp>=2.3,<3",

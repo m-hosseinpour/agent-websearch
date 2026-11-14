@@ -40,6 +40,7 @@ def test_parses_real_recorded_page():
     assert "write concurrent code using the async" in hits[0].snippet
     assert all(hit.url.startswith("http") for hit in hits)
     assert all("duckduckgo.com/l/" not in hit.url for hit in hits)
+    assert all(hit.snippet for hit in hits)
     assert detect_block(200, body.encode("utf-8"), {}) is None
 
 

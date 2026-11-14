@@ -2,6 +2,7 @@ import httpx
 import pytest
 
 from websearch.backends.base import BackendError
+from websearch.backends.tinyfish import detect_api_error
 from websearch.config import Config, EgressConfig, SearchConfig
 from websearch.egress.router import Egress
 
@@ -169,6 +170,31 @@ async def test_429_is_rate_limited_without_retry(tmp_path):
 
     assert caught.value.code == "rate_limited"
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize(
+    ("status", "code"),
+    [
+        (401, "unauthorized"),
+        (402, "quota"),
+        (403, "blocked"),
+        (429, "rate_limited"),
+        (500, "http_error"),
+    ],
+)
+async def test_tinyfish_api_status_does_not_hop_or_learn(tmp_path, status, code):
+    def handler(via_tunnel, request):
+        return httpx.Response(status, text="api says no")
+
+    egress, calls = make_egress(tmp_path, handler)
+    with pytest.raises(BackendError) as caught:
+        await egress.fetch(
+            "https://api.search.tinyfish.ai?query=x", block_detector=detect_api_error
+        )
+
+    assert caught.value.code == code
+    assert len(calls) == 1  # no retry and no direct->tunnel hop on an API verdict
+    assert not egress.learned.matches("api.search.tinyfish.ai")
 
 
 async def test_both_routes_failing_reports_blocked(tmp_path):

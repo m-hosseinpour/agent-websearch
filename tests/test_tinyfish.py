@@ -2,7 +2,12 @@ import httpx
 import pytest
 
 from websearch.backends.base import BackendError
-from websearch.backends.tinyfish import TinyFishBackend, locale, parse_results
+from websearch.backends.tinyfish import (
+    TinyFishBackend,
+    detect_api_error,
+    locale,
+    parse_results,
+)
 
 
 class FakeFetch:
@@ -61,6 +66,29 @@ def test_news_results_use_publisher_and_date_when_snippet_is_empty():
         10,
     )
     assert hits[0].snippet == "WSJ — 2026-11-14"
+
+
+def test_count_truncates_and_empty_results_are_valid():
+    twelve = payload(*(item(position=n, url=f"https://e.example/{n}") for n in range(1, 13)))
+    assert len(parse_results(twelve, 5)) == 5
+    assert parse_results(payload(), 10) == []
+
+
+@pytest.mark.parametrize(
+    ("status", "code"),
+    [
+        (401, "unauthorized"),
+        (402, "quota"),
+        (403, "blocked"),
+        (429, "rate_limited"),
+        (500, "http_error"),
+        (503, "http_error"),
+    ],
+)
+def test_detects_api_status_before_route_handling(status, code):
+    assert detect_api_error(status, b"", {}) == code
+    assert detect_api_error(400, b"", {}) is None
+    assert detect_api_error(200, b"", {}) is None
 
 
 async def test_missing_key_is_unauthorized_without_a_request(monkeypatch):

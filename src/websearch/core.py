@@ -126,6 +126,7 @@ class Limiter:
         max_wait: float = 5.0,
         max_per_hour: int = 0,
         window: float = 3600.0,
+        clock=time.monotonic,
     ) -> None:
         self.min_interval = max(0.0, min_interval)
         self._semaphore = asyncio.Semaphore(max(1, concurrency))
@@ -134,6 +135,7 @@ class Limiter:
         self.max_wait = max_wait
         self.max_per_hour = max(0, max_per_hour)
         self.window = window
+        self._clock = clock
         self._hourly: deque[float] = deque()
 
     async def __aenter__(self) -> "Limiter":
@@ -143,7 +145,7 @@ class Limiter:
             raise BackendError("rate_limited", "too many in-flight requests") from exc
         try:
             async with self._lock:
-                now = time.monotonic()
+                now = self._clock()
                 if self.max_per_hour:
                     while self._hourly and now - self._hourly[0] >= self.window:
                         self._hourly.popleft()
@@ -158,7 +160,7 @@ class Limiter:
                     raise BackendError("rate_limited", f"next slot in {wait:.1f}s")
                 if wait > 0:
                     await asyncio.sleep(wait)
-                    now = time.monotonic()
+                    now = self._clock()
                 self._last = now
                 if self.max_per_hour:
                     self._hourly.append(now)

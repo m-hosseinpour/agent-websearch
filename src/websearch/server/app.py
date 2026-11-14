@@ -52,12 +52,12 @@ def build_app(config: Config | None = None, service: SearchService | None = None
     async def search(
         query: str, count: int | None = None, lang: str | None = None
     ) -> SearchResponse:
-        """Web search through DuckDuckGo and Mwmbl.
+        """Web search through TinyFish, Mwmbl and DuckDuckGo.
 
         Args:
             query: Search terms, English or Persian.
             count: Number of merged results (default from config, capped by max_count).
-            lang: "auto" (default, detects Persian script), "fa", "en", or a DDG
+            lang: "auto" (default, detects Persian script), "fa", "en", or a
                 regional code such as "de-de".
         """
         return await service.search(query, count, lang)

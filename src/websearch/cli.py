@@ -25,7 +25,32 @@ from .service import build_service
 LOOPBACK = {"127.0.0.1", "localhost", "::1"}
 
 
+def _env_file_path() -> Path:
+    home = Path(os.environ.get("WEBSEARCH_HOME") or "~/.config/websearch").expanduser()
+    return home / "env"
+
+
+def _load_env_file(path: Path) -> None:
+    """Let the CLI see the same EnvironmentFile the systemd unit loads.
+
+    Explicit environment variables win; the file fills only what is missing.
+    """
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        if key:
+            os.environ.setdefault(key, value.strip().strip('"').strip("'"))
+
+
 def _config(args: argparse.Namespace) -> Config:
+    _load_env_file(_env_file_path())
     return Config.load(Path(args.config).expanduser() if getattr(args, "config", None) else None)
 
 
@@ -169,6 +194,11 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         line("PASS" if mode == 0o600 else "WARN", f"token: {token_path} (mode {oct(mode)})")
     else:
         line("WARN", f"token: missing, will be generated at {token_path}")
+
+    env_path = config.home / "env"
+    if env_path.exists():
+        mode = env_path.stat().st_mode & 0o777
+        line("PASS" if mode == 0o600 else "WARN", f"env: {env_path} (mode {oct(mode)})")
 
     binary = configured_binary(config)
     line("PASS" if binary else "WARN", f"xray: {binary or 'not found (downloaded at first proxied request)'}")

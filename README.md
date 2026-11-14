@@ -66,7 +66,9 @@ printf 'TINYFISH_API_KEY=%s\n' 'sk-tinyfish-...' > ~/.config/websearch/env
 chmod 600 ~/.config/websearch/env
 ```
 
-سپس در `config.toml` بک‌اند را روشن کنید. کلید را در مخزن، گزارش یا لاگ نگذارید.
+سپس در `config.toml` بک‌اند را روشن کنید. خود `websearch serve/search/doctor` هم همین
+فایل را می‌خواند (متغیر محیطی صریح بر فایل اولویت دارد). کلید را در مخزن، گزارش یا لاگ
+نگذارید.
 
 بقیهٔ فایل‌ها تنبل ساخته می‌شوند:
 
@@ -79,8 +81,9 @@ chmod 600 ~/.config/websearch/env
 
 همهٔ فایل‌های حاوی اعتبار (توکن، pool، gateway، state، لاگ) حالت ۰۶۰۰ دارند.
 
-`pool.txt` را خودتان پر می‌کنید؛ بدون آن، جست‌وجو مستقیم انجام می‌شود و DDG از این
-شبکه با کپچا شکست می‌خورد (با `error_code=captcha`، نه لیست خالی).
+`pool.txt` را خودتان پر می‌کنید. TinyFish و Mwmbl بدون تونل کار می‌کنند؛ pool فقط برای
+بک‌اند اختیاری DDG و مسیرهای پشت فیلتر لازم است. بدون pool، DDG از این شبکه با کپچا
+شکست می‌خورد (`error_code=captcha`، نه لیست خالی) — به همین دلیل در این نصب خاموش است.
 
 ## اجرا
 
@@ -130,7 +133,8 @@ enabled = false          # در این شبکه کپچا می‌دهد؛ در پ
 
 - **TinyFish:** بک‌اند اصلی؛ ایندکس زندهٔ گوگل از طریق سرویس خودشان، خروجی ساختاریافته،
   پشتیبانی `fa`/`en` با `language`/`location`. سهمیهٔ رایگان: ۳۰/دقیقه، ۵۰۰/ساعت و
-  ۱۲٬۰۰۰/روز. هر جست‌وجو یک درخواست است و حداکثر ۱۰ نتیجهٔ صفحهٔ اول را برمی‌گرداند.
+  ۱۲٬۰۰۰/روز. هر جست‌وجو یک درخواست به API است (در خطای شبکه ممکن است یک تلاش مسیر
+  دوم اضافه شود) و حداکثر ۱۰ نتیجهٔ صفحهٔ اول را برمی‌گرداند.
 - **Mwmbl:** مستقل و بدون کلید؛ fallback وقتی TinyFish کلید/سهمیه ندارد.
 - **DDG:** بدون کلید ولی از این شبکه کپچا؛ کدش می‌ماند و با `enabled=true` برمی‌گردد.
 
@@ -192,7 +196,8 @@ curl -s "http://127.0.0.1:7971/search?q=%D8%AA%D8%AD%D9%82%DB%8C%D9%82&count=5" 
   "results": [{"title": "...", "url": "...", "snippet": "...", "engine": "tinyfish"}],
   "backends": [
     {"name": "tinyfish", "status": "ok", "count": 10, "latency_ms": 1050},
-    {"name": "ddg", "status": "skipped", "count": 0, "latency_ms": 0},
+    {"name": "ddg", "status": "skipped", "count": 0, "latency_ms": 0,
+     "error_code": null, "detail": "disabled in config"},
     {"name": "mwmbl", "status": "ok", "count": 1, "latency_ms": 700}
   ]
 }
@@ -214,7 +219,7 @@ curl -s "http://127.0.0.1:7971/search?q=%D8%AA%D8%AD%D9%82%DB%8C%D9%82&count=5" 
 ## آزمون
 
 ```bash
-.venv/bin/python -m pytest -q       # ۵۹ تست
+.venv/bin/python -m pytest -q       # ۷۳ تست
 websearch doctor --live             # توکن، xray، pool، کلید TinyFish، Mwmbl و canary تونل
 ```
 

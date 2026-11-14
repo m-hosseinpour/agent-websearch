@@ -1,5 +1,5 @@
 [Unit]
-Description=websearch MCP search service (DuckDuckGo + Mwmbl)
+Description=websearch MCP search service (TinyFish + Mwmbl + DDG)
 After=network.target
 
 [Service]

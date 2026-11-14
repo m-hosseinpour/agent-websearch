@@ -1,4 +1,3 @@
-import asyncio
 import time
 
 import pytest
@@ -137,10 +136,48 @@ async def test_hourly_cap_fails_fast_with_a_retry_hint():
     assert "hourly cap of 2" in exc.value.detail
 
 
+class Clock:
+    def __init__(self):
+        self.now = 0.0
+
+    def __call__(self):
+        return self.now
+
+
 async def test_hourly_window_expires():
-    limiter = Limiter(0, 1, max_per_hour=1, window=0.05)
+    clock = Clock()
+    limiter = Limiter(0, 1, max_per_hour=1, window=10, clock=clock)
     async with limiter:
         pass
-    await asyncio.sleep(0.06)
+    with pytest.raises(BackendError):
+        async with limiter:
+            pass
+    clock.now = 11
     async with limiter:
         pass
+
+
+async def test_hourly_cap_reports_rate_limited_and_fallback_still_serves(tmp_path):
+    config = Config(
+        home=tmp_path,
+        search=SearchConfig(backend_timeout=2.0, cache_ttl=0),
+        backends={
+            "tinyfish": BackendConfig(max_per_hour=2),
+            "mwmbl": BackendConfig(),
+        },
+    )
+    service = SearchService(
+        config,
+        {"tinyfish": FakeBackend("tinyfish"), "mwmbl": FakeBackend("mwmbl")},
+        FakeEgress(),
+        None,
+    )
+
+    await service.search("one")
+    await service.search("two")
+    third = await service.search("three")
+
+    reports = {report.name: report for report in third.backends}
+    assert reports["tinyfish"].error_code == "rate_limited"
+    assert reports["mwmbl"].status == "ok"
+    assert third.partial is True

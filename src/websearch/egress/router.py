@@ -206,7 +206,14 @@ class Egress:
                     # the same exit IP answered both ways (observed with DDG).
                     code = block_detector(response.status_code, response.content, response.headers)
                     if code:
-                        raise _error(code, "block page from the backend")
+                        # A block page is the engine's verdict; an API status is
+                        # the service's verdict. Keep the detail honest for both.
+                        detail = (
+                            "block page from the backend"
+                            if code == "captcha"
+                            else f"HTTP {response.status_code} from the backend"
+                        )
+                        raise _error(code, detail)
 
                 if response.status_code in ROUTE_DENIED_STATUS:
                     denied = True

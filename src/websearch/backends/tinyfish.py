@@ -2,8 +2,9 @@
 
 API: ``GET https://api.search.tinyfish.ai?query=...`` with ``X-API-Key``.
 Free tier: 30 requests/min, 500/hour, 12,000/day. The service enforces the
-first two via ``BackendConfig``; this module makes one request per search and
-returns the API's first page (10 results).
+first two via ``BackendConfig``; this module makes one API request per search
+(barring a network-level route retry in Egress) and returns the API's first
+page (10 results).
 """
 
 from __future__ import annotations
@@ -16,6 +17,15 @@ from .base import BackendError
 
 TINYFISH_SEARCH = "https://api.search.tinyfish.ai"
 API_KEY_ENV = "TINYFISH_API_KEY"
+# Statuses that are API verdicts, not route problems. The egress router calls
+# this before its own status handling, so a 401/402/403/5xx never triggers a
+# tunnel hop or a retry (which would spend more of the free quota).
+STATUS_CODES = {
+    401: "unauthorized",
+    402: "quota",
+    403: "blocked",
+    429: "rate_limited",
+}
 # TinyFish resolves language -> country automatically; make the intended locale
 # explicit for the two languages this tool is used with.
 DEFAULT_LOCATIONS = {"fa": "IR", "en": "US"}
@@ -60,6 +70,17 @@ def parse_results(payload: object, count: int) -> list[Hit]:
     return hits[:count]
 
 
+def detect_api_error(status: int, body: bytes, headers) -> str | None:
+    """Classify TinyFish API errors before the router treats them as route failures."""
+    if status in STATUS_CODES:
+        return STATUS_CODES[status]
+    if status >= 500:
+        # Do not retry/hop: a failing keyed API should open the breaker instead
+        # of spending the free-tier budget on immediate retries.
+        return "http_error"
+    return None
+
+
 def _response_error(response) -> BackendError:
     status = response.status_code
     detail = response.text[:200].replace("\n", " ").strip()
@@ -85,10 +106,18 @@ class TinyFishBackend:
         params = {"query": query, "language": language}
         if location:
             params["location"] = location
-        response = await fetch(
-            TINYFISH_SEARCH + "?" + urllib.parse.urlencode(params),
-            headers={"X-API-Key": api_key, "Accept": "application/json"},
-        )
+        try:
+            response = await fetch(
+                TINYFISH_SEARCH + "?" + urllib.parse.urlencode(params),
+                headers={"X-API-Key": api_key, "Accept": "application/json"},
+                block_detector=detect_api_error,
+            )
+        except BackendError as exc:
+            if exc.code == "unauthorized":
+                raise BackendError("unauthorized", "TinyFish API key missing or invalid") from exc
+            if exc.code == "quota":
+                raise BackendError("quota", "TinyFish daily free allowance exhausted") from exc
+            raise
         if response.status_code != 200:
             raise _response_error(response)
         try:

@@ -8,11 +8,12 @@ from websearch.backends.ddg import (
     real_url,
 )
 
-FIXTURE = Path(__file__).parent / "fixtures" / "ddg_results.html"
+REAL_FIXTURE = Path(__file__).parent / "fixtures" / "ddg_results.html"
+SYNTHETIC_FIXTURE = Path(__file__).parent / "fixtures" / "ddg_results_synthetic.html"
 
 
-def test_parses_titles_urls_and_snippets():
-    hits = parse_results(FIXTURE.read_text(encoding="utf-8"))
+def test_parses_synthetic_edge_cases():
+    hits = parse_results(SYNTHETIC_FIXTURE.read_text(encoding="utf-8"))
     assert [hit.title for hit in hits] == [
         "Deep Research & Agents",
         "پژوهش عمیق",
@@ -27,6 +28,19 @@ def test_parses_titles_urls_and_snippets():
     assert hits[1].snippet == "توضیح فارسی دربارهٔ پژوهش."
     assert hits[2].snippet == "No redirect wrapper here."
     assert all(hit.engine == "ddg" for hit in hits)
+
+
+def test_parses_real_recorded_page():
+    body = REAL_FIXTURE.read_text(encoding="utf-8")
+    hits = parse_results(body)
+
+    assert len(hits) == 10
+    assert hits[0].title == "Python's asyncio: A Hands-On Walkthrough - Real Python"
+    assert hits[0].url == "https://realpython.com/async-io-python/"
+    assert "write concurrent code using the async" in hits[0].snippet
+    assert all(hit.url.startswith("http") for hit in hits)
+    assert all("duckduckgo.com/l/" not in hit.url for hit in hits)
+    assert detect_block(200, body.encode("utf-8"), {}) is None
 
 
 def test_real_url_handles_wrappers_and_plain_links():

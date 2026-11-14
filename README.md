@@ -181,8 +181,10 @@ curl -s "http://127.0.0.1:7971/search?q=%D8%AA%D8%AD%D9%82%DB%8C%D9%82&count=5" 
 websearch doctor --live     # توکن، xray، pool، Mwmbl و باز شدن canary از تونل
 ```
 
-پارسر DDG با fixture تست می‌شود (`tests/fixtures/ddg_results.html`) چون شکننده‌ترین
-بخش است. اگر ساختار HTML عوض شد، اول fixture واقعی را ضبط کنید، بعد پارسر را.
+پارسر DDG با دو fixture تست می‌شود چون شکننده‌ترین بخش است:
+`tests/fixtures/ddg_results.html` (صفحهٔ واقعی DDG، ضبط ۱۴ نوامبر ۲۰۲۶) و
+`ddg_results_synthetic.html` (حالت‌های لبه: فارسی، لینک ساده، entity). اگر ساختار HTML
+عوض شد، اول fixture واقعی تازه ضبط کنید، بعد پارسر را.
 
 ## محدودیت‌های شناخته‌شده
 

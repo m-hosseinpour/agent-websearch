@@ -1,7 +1,8 @@
 # websearch — جست‌وجوی وب برای عامل، روی HTTP و MCP
 
-یک سرویس محلی که جای رلهٔ DDG و SearXNG را می‌گیرد. یک نقطهٔ اتصال، دو بک‌اند بدون کلید
-(DDG و Mwmbl)، و خروجی‌ای که همیشه می‌گوید هر بک‌اند چه شد.
+یک سرویس محلی که جای رلهٔ DDG و SearXNG را می‌گیرد. یک نقطهٔ اتصال، سه بک‌اند
+(TinyFish با کلید رایگان، Mwmbl بدون کلید، و DDG اختیاری)، و خروجی‌ای که همیشه می‌گوید
+هر بک‌اند چه شد.
 
 - **MCP:** `POST /mcp` (streamable HTTP، stateless) با یک ابزار: `search`
 - **REST:** `GET|POST /search` برای curl و اسکریپت
@@ -17,6 +18,8 @@
 - `uv` (یا pip)
 - xray — اگر نباشد، اولین درخواست پروکسی‌شده یک نسخهٔ رسمی را دانلود و با SHA-256
   بررسی می‌کند. اگر از قبل دارید، با `WEBSEARCH_XRAY_BIN` یا `XRAY_BIN` معرفی کنید.
+- کلید TinyFish برای بک‌اند اصلی (رایگان، بدون کارت): از
+  <https://agent.tinyfish.ai/api-keys> بسازید و در `~/.config/websearch/env` بگذارید.
 
 ## نصب
 
@@ -55,6 +58,15 @@ websearch setup --seed-from ~/.config/proxy-tunnel/pool.txt
 | `config.toml` | تنظیمات (نمونه: `config.example.toml`) |
 | `token` | توکن Bearer، حالت ۰۶۰۰ |
 | `pool.txt` | لینک‌های `vless://` یا `trojan://`، خط اول اول امتحان می‌شود |
+
+برای TinyFish یک فایل env با حالت ۰۶۰۰ بسازید (یونیت systemd همین را می‌خواند):
+
+```bash
+printf 'TINYFISH_API_KEY=%s\n' 'sk-tinyfish-...' > ~/.config/websearch/env
+chmod 600 ~/.config/websearch/env
+```
+
+سپس در `config.toml` بک‌اند را روشن کنید. کلید را در مخزن، گزارش یا لاگ نگذارید.
 
 بقیهٔ فایل‌ها تنبل ساخته می‌شوند:
 
@@ -100,6 +112,28 @@ WEBSEARCH_TOKEN=...                  # جای فایل توکن
 WEBSEARCH_HOME=/path/to/home         # همهٔ مسیرهای نسبی زیر این می‌روند
 ```
 
+### بک‌اندها
+
+```toml
+[backends.tinyfish]
+enabled = true
+min_interval = 2.0       # ۳۰ درخواست در دقیقه
+max_concurrency = 1
+max_per_hour = 500       # سقف ساعتی free tier
+
+[backends.mwmbl]
+enabled = true
+
+[backends.ddg]
+enabled = false          # در این شبکه کپچا می‌دهد؛ در پنجرهٔ سالم روشن کنید
+```
+
+- **TinyFish:** بک‌اند اصلی؛ ایندکس زندهٔ گوگل از طریق سرویس خودشان، خروجی ساختاریافته،
+  پشتیبانی `fa`/`en` با `language`/`location`. سهمیهٔ رایگان: ۳۰/دقیقه، ۵۰۰/ساعت و
+  ۱۲٬۰۰۰/روز. هر جست‌وجو یک درخواست است و حداکثر ۱۰ نتیجهٔ صفحهٔ اول را برمی‌گرداند.
+- **Mwmbl:** مستقل و بدون کلید؛ fallback وقتی TinyFish کلید/سهمیه ندارد.
+- **DDG:** بدون کلید ولی از این شبکه کپچا؛ کدش می‌ماند و با `enabled=true` برمی‌گردد.
+
 ### مسیر خروج
 
 `mode=auto` یعنی: دامنه در `blocked-domains.txt` هست؟ فقط تونل. نیست؟ اول مستقیم، و
@@ -107,10 +141,10 @@ WEBSEARCH_HOME=/path/to/home         # همهٔ مسیرهای نسبی زیر �
 با تاریخ و دلیل به لیست اضافه می‌شود تا دفعهٔ بعد مستقیم تلاش نشود.
 
 کپچا و صفحهٔ بلاک به‌طور خودکار مسیر را عوض نمی‌کنند؛ خطای بک‌اند هستند و breaker
-را باز می‌کنند. اگر مسیر مستقیم کپچا می‌گیرد ولی تونل جواب می‌دهد (مثل DDG در این
-شبکه)، دامنه را دستی در `blocked-domains.txt` بگذارید تا همیشه از تونل برود؛ بعد از
-ویرایش، سرویس را restart کنید. این override موقتی است: تا وقتی در لیست باشد مسیر مستقیم
-دیگر امتحان نمی‌شود، پس بعد از سالم‌شدن مسیر مستقیم خط را بردارید و restart کنید.
+را باز می‌کنند. اگر مسیر مستقیم یک دامنه کپچا می‌گیرد ولی تونل جواب می‌دهد، دامنه را
+دستی در `blocked-domains.txt` بگذارید تا همیشه از تونل برود؛ بعد از ویرایش، سرویس را
+restart کنید. این override موقتی است: تا وقتی در لیست باشد مسیر مستقیم دیگر امتحان
+نمی‌شود، پس بعد از سالم‌شدن مسیر مستقیم خط را بردارید و restart کنید.
 کنترل دستی:
 
 ```bash
@@ -141,7 +175,7 @@ websearch status
 می‌کند. سرورهای محلی (stdio) همچنان زیر کلید `mcp.servers` می‌آیند، نه مستقیم زیر `mcp`.
 
 ابزار `search` سه پارامتر دارد: `query` (لازم)، `count` (پیش‌فرض ۱۰، سقف ۳۰)،
-`lang` (`auto` پیش‌فرض؛ برای فارسی `fa`، انگلیسی `en`، یا کد منطقه‌ای DDG مثل `de-de`).
+`lang` (`auto` پیش‌فرض؛ برای فارسی `fa`، انگلیسی `en`، یا کد منطقه‌ای مثل `de-de`).
 
 ## نمونهٔ REST
 
@@ -153,13 +187,13 @@ curl -s "http://127.0.0.1:7971/search?q=%D8%AA%D8%AD%D9%82%DB%8C%D9%82&count=5" 
 
 ```json
 {
-  "query": "تحقیق", "lang": "fa", "count": 5, "partial": true, "cached": false,
+  "query": "تحقیق", "lang": "fa", "count": 5, "partial": false, "cached": false,
   "error_code": null,
-  "results": [{"title": "...", "url": "...", "snippet": "...", "engine": "mwmbl"}],
+  "results": [{"title": "...", "url": "...", "snippet": "...", "engine": "tinyfish"}],
   "backends": [
-    {"name": "ddg", "status": "error", "count": 0, "latency_ms": 800,
-     "error_code": "captcha", "detail": "block page from the backend"},
-    {"name": "mwmbl", "status": "ok", "count": 5, "latency_ms": 467}
+    {"name": "tinyfish", "status": "ok", "count": 10, "latency_ms": 1050},
+    {"name": "ddg", "status": "skipped", "count": 0, "latency_ms": 0},
+    {"name": "mwmbl", "status": "ok", "count": 1, "latency_ms": 700}
   ]
 }
 ```
@@ -172,15 +206,16 @@ curl -s "http://127.0.0.1:7971/search?q=%D8%AA%D8%AD%D9%82%DB%8C%D9%82&count=5" 
 ### کدهای خطا
 
 `captcha`، `blocked`، `timeout`، `unreachable`، `http_error`، `parse_error`،
-`rate_limited`، `circuit_open`، `proxy_unavailable`، `proxy_busy`،
-`all_backends_failed`، `no_backends_enabled`.
-قاعده: **هرگز لیست خالی بدون دلیل برنمی‌گردد.**
+`unauthorized`، `quota`، `rate_limited`، `circuit_open`، `proxy_unavailable`،
+`proxy_busy`، `all_backends_failed`، `no_backends_enabled`.
+قاعده: **هرگز لیست خالی بدون دلیل برنمی‌گردد.** `unauthorized` یعنی کلید TinyFish
+غایب/غلط است؛ `quota` یعنی سهمیهٔ رایگان روزانه تمام شده.
 
 ## آزمون
 
 ```bash
-.venv/bin/python -m pytest -q
-websearch doctor --live     # توکن، xray، pool، Mwmbl و باز شدن canary از تونل
+.venv/bin/python -m pytest -q       # ۵۹ تست
+websearch doctor --live             # توکن، xray، pool، کلید TinyFish، Mwmbl و canary تونل
 ```
 
 پارسر DDG با دو fixture تست می‌شود چون شکننده‌ترین بخش است:
@@ -190,9 +225,13 @@ websearch doctor --live     # توکن، xray، pool، Mwmbl و باز شدن ca
 
 ## محدودیت‌های شناخته‌شده
 
-- **DDG:** جست‌وجوی خودکار خلاف شرایط استفادهٔ DDG است و با نرخ بالا کپچا می‌دهد. برای
-  همین `min_interval=2s`، یک درخواست هم‌زمان، و کش ۵ دقیقه پیش‌فرض است. کپچا یک وضعیت
-  موقت است؛ breaker ۱۰ دقیقه باز می‌ماند و Mwmbl تنها کار می‌کند.
+- **TinyFish:** هر جست‌وجو صفحهٔ اول (۱۰ نتیجه) را برمی‌گرداند؛ `count` بزرگ‌تر از ۱۰
+  یعنی ۱۰ نتیجه از این بک‌اند. سهمیهٔ رایگان ۳۰/دقیقه، ۵۰۰/ساعت و ۱۲٬۰۰۰/روز است
+  (ریست ۰۰:۰۰ UTC)؛ بعد از آن با wallet خالی `quota` می‌گیرید. نتایج خبری
+  (`domain_type=news`) اسنیپت نمی‌دهند و این بک‌اند publisher/date را جای آن می‌گذارد.
+  کلید در `~/.config/websearch/env` است و باید در صورت چرخش به‌روز شود.
+- **DDG:** بدون کلید ولی از این شبکه کپچا می‌دهد؛ در این نصب خاموش است. اگر در پنجرهٔ
+  سالم روشنش کردید، `min_interval=2s` و یک درخواست هم‌زمان را نگه دارید.
 - **Mwmbl:** ایندکس کوچک و انگلیسی‌محور؛ برای کوئری فارسی معمولاً چیزی ندارد و
   `status=ok, count=0` برمی‌گرداند (نه خطا).
 - **تونل:** کانفیگ‌های عمومی اشتراکی هر چند درخواست یک‌بار reset می‌شوند؛ چرخش خودکار

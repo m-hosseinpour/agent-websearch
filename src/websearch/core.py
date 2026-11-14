@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import time
 import urllib.parse
+from collections import deque
 
 from .backends.base import Backend, BackendError
 from .config import BackendConfig, Config
@@ -16,8 +17,15 @@ from .egress.router import Egress
 from .egress.tunnel import Tunnel
 from .models import BackendReport, Hit, SearchResponse
 
-PRIORITY = {"ddg": 0, "mwmbl": 1}
-IMMEDIATE_OPEN = {"captcha": 600.0, "blocked": 600.0, "proxy_unavailable": 120.0, "rate_limited": 60.0}
+PRIORITY = {"tinyfish": 0, "ddg": 1, "mwmbl": 2}
+IMMEDIATE_OPEN = {
+    "captcha": 600.0,
+    "blocked": 600.0,
+    "proxy_unavailable": 120.0,
+    "rate_limited": 60.0,
+    "unauthorized": 600.0,
+    "quota": 3600.0,
+}
 FAILURE_THRESHOLD = 2
 FAILURE_COOLDOWN = 60.0
 
@@ -111,12 +119,22 @@ class Limiter:
     silently eating the caller's whole timeout budget.
     """
 
-    def __init__(self, min_interval: float, concurrency: int, max_wait: float = 5.0) -> None:
+    def __init__(
+        self,
+        min_interval: float,
+        concurrency: int,
+        max_wait: float = 5.0,
+        max_per_hour: int = 0,
+        window: float = 3600.0,
+    ) -> None:
         self.min_interval = max(0.0, min_interval)
         self._semaphore = asyncio.Semaphore(max(1, concurrency))
         self._lock = asyncio.Lock()
         self._last = 0.0
         self.max_wait = max_wait
+        self.max_per_hour = max(0, max_per_hour)
+        self.window = window
+        self._hourly: deque[float] = deque()
 
     async def __aenter__(self) -> "Limiter":
         try:
@@ -125,12 +143,25 @@ class Limiter:
             raise BackendError("rate_limited", "too many in-flight requests") from exc
         try:
             async with self._lock:
-                wait = self._last + self.min_interval - time.monotonic()
+                now = time.monotonic()
+                if self.max_per_hour:
+                    while self._hourly and now - self._hourly[0] >= self.window:
+                        self._hourly.popleft()
+                    if len(self._hourly) >= self.max_per_hour:
+                        retry = max(1, int(self.window - (now - self._hourly[0])) + 1)
+                        raise BackendError(
+                            "rate_limited",
+                            f"hourly cap of {self.max_per_hour} reached; retry in {retry}s",
+                        )
+                wait = self._last + self.min_interval - now
                 if wait > self.max_wait:
                     raise BackendError("rate_limited", f"next slot in {wait:.1f}s")
                 if wait > 0:
                     await asyncio.sleep(wait)
-                self._last = time.monotonic()
+                    now = time.monotonic()
+                self._last = now
+                if self.max_per_hour:
+                    self._hourly.append(now)
         except BaseException:
             self._semaphore.release()
             raise
@@ -156,7 +187,11 @@ class SearchService:
         self._cache: dict[tuple[str, int, str], tuple[float, SearchResponse]] = {}
         self._cache_lock = asyncio.Lock()
         self._limiters = {
-            name: Limiter(cfg.min_interval, cfg.max_concurrency)
+            name: Limiter(
+                cfg.min_interval,
+                cfg.max_concurrency,
+                max_per_hour=cfg.max_per_hour,
+            )
             for name in backends
             for cfg in [self.config.backends.get(name) or BackendConfig()]
             if cfg.enabled

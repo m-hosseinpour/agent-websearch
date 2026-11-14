@@ -19,6 +19,7 @@ dependencies = [
 websearch = "websearch.cli:main"
 
 [project.entry-points."websearch.backends"]
+tinyfish = "websearch.backends.tinyfish:TinyFishBackend"
 ddg = "websearch.backends.ddg:DdgBackend"
 mwmbl = "websearch.backends.mwmbl:MwmblBackend"
 

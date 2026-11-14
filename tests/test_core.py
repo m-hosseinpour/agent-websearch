@@ -1,8 +1,11 @@
+import asyncio
 import time
+
+import pytest
 
 from websearch.backends.base import BackendError
 from websearch.config import BackendConfig, Config, SearchConfig
-from websearch.core import Breaker, SearchService, canonical_key
+from websearch.core import Breaker, Limiter, SearchService, canonical_key
 from websearch.models import Hit
 
 
@@ -117,3 +120,27 @@ async def test_circuit_open_is_reported_without_calling_the_backend(tmp_path):
 def test_canonical_key_survives_a_malformed_url():
     assert canonical_key("http://[bad") == "http://[bad"
     assert canonical_key("https://example.com/a") == "example.com/a?"
+
+
+async def test_hourly_cap_fails_fast_with_a_retry_hint():
+    limiter = Limiter(0, 1, max_per_hour=2, window=3600)
+
+    async with limiter:
+        pass
+    async with limiter:
+        pass
+    with pytest.raises(BackendError) as exc:
+        async with limiter:
+            pass
+
+    assert exc.value.code == "rate_limited"
+    assert "hourly cap of 2" in exc.value.detail
+
+
+async def test_hourly_window_expires():
+    limiter = Limiter(0, 1, max_per_hour=1, window=0.05)
+    async with limiter:
+        pass
+    await asyncio.sleep(0.06)
+    async with limiter:
+        pass

@@ -52,6 +52,7 @@ class BackendConfig:
     enabled: bool = True
     min_interval: float = 0.0
     max_concurrency: int = 1
+    max_per_hour: int = 0  # 0 = no hourly cap
 
 
 @dataclass(frozen=True)
@@ -90,6 +91,13 @@ DEFAULTS: dict[str, Any] = {
         "backend_timeout": 10.0,
     },
     "backends": {
+        # Keyed and off by default: enable it after TINYFISH_API_KEY is set.
+        "tinyfish": {
+            "enabled": False,
+            "min_interval": 2.0,
+            "max_concurrency": 1,
+            "max_per_hour": 500,
+        },
         "ddg": {"enabled": True, "min_interval": 2.0, "max_concurrency": 1},
         "mwmbl": {"enabled": True, "min_interval": 0.5, "max_concurrency": 1},
     },
@@ -290,6 +298,14 @@ max_count = 30
 default_lang = "auto"      # auto | fa | en
 cache_ttl = 300            # seconds
 backend_timeout = 10
+
+[backends.tinyfish]
+# Free keyed API: 30 requests/min, 500/hour, 12,000/day. Put the key in
+# ~/.config/websearch/env as TINYFISH_API_KEY=... (mode 0600), then set enabled.
+enabled = false
+min_interval = 2.0         # 30/min
+max_concurrency = 1
+max_per_hour = 500
 
 [backends.ddg]
 enabled = true

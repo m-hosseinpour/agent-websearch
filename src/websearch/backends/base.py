@@ -74,7 +74,8 @@ def load_backends() -> dict[str, Backend]:
     # Built-ins are always available: they are the shipped defaults, not plugins.
     from .ddg import DdgBackend
     from .mwmbl import MwmblBackend
+    from .tinyfish import TinyFishBackend
 
-    for instance in (DdgBackend(), MwmblBackend()):
+    for instance in (TinyFishBackend(), DdgBackend(), MwmblBackend()):
         found.setdefault(instance.name, instance)
     return found

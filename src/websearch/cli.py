@@ -5,10 +5,12 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import sys
 import time
 from pathlib import Path
 
+from .backends.tinyfish import API_KEY_ENV
 from .config import DEFAULT_CONFIG_TOML, Config
 from .egress.tunnel import (
     Tunnel,
@@ -185,6 +187,15 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     line("PASS" if config.learned_path.exists() else "WARN",
          f"learned: {len(_learned(config))} domains ({config.learned_path})")
+
+    tinyfish = config.backends.get("tinyfish")
+    if tinyfish is not None and tinyfish.enabled:
+        key = (os.environ.get(API_KEY_ENV) or "").strip()
+        line(
+            "PASS" if key else "FAIL",
+            f"tinyfish: {API_KEY_ENV} "
+            + ("set" if key else "missing (put it in ~/.config/websearch/env)"),
+        )
 
     if args.live:
         for level, text in _live_checks(config):

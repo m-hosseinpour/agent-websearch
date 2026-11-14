@@ -34,6 +34,10 @@ uv pip install --python .venv/bin/python -e .
 
 برای تست: `uv pip install --python .venv/bin/python pytest pytest-asyncio`
 
+> این پوشه داخل مخزن `harness-comparision` است. اگر مخزن جابه‌جا شد، نصب editable را
+> دوباره اجرا کنید (`uv pip install --python .venv/bin/python -e .`)؛ وگرنه venv هنوز
+> به مسیر قدیمی اشاره می‌کند و تست‌ها با `ModuleNotFoundError` می‌افتند.
+
 ## راه‌اندازی اولیه
 
 ```bash

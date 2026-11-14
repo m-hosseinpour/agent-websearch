@@ -23,6 +23,8 @@ max_concurrency = 1
 max_per_hour = 500
 
 [backends.ddg]
+# enabled by default, but needs a working pool in a filtered network:
+# without one, DDG answers with a captcha and the breaker opens for 10 minutes.
 enabled = true
 min_interval = 2.0          # conservative on purpose: DDG bans fast automated use
 max_concurrency = 1

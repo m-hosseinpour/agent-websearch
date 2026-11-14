@@ -21,6 +21,77 @@
 - کلید TinyFish برای بک‌اند اصلی (رایگان، بدون کارت): از
   <https://agent.tinyfish.ai/api-keys> بسازید و در `~/.config/websearch/env` بگذارید.
 
+## شروع سریع (از صفر تا کارکرد)
+
+هفت گام؛ جزئیات هر کدام در بخش‌های بعدی آمده است.
+
+**۱. uv** — اگر نصب نیست:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**۲. نصب سرویس** — از داخل همین پوشه:
+
+```bash
+uv tool install .
+websearch --help          # فهرست فرمان‌ها را چاپ می‌کند
+```
+
+اگر `~/.local/bin` در `PATH` نیست: `uv tool update-shell` و سپس شل را باز کنید.
+
+**۳. ساخت خانهٔ سرویس:**
+
+```bash
+websearch setup
+```
+
+`~/.config/websearch/` ساخته می‌شود: `config.toml`، `token` (حالت ۰۶۰۰) و `pool.txt`.
+
+**۴. کلید TinyFish:**
+
+```bash
+printf 'TINYFISH_API_KEY=%s\n' 'sk-tinyfish-...' > ~/.config/websearch/env
+chmod 600 ~/.config/websearch/env
+```
+
+و در `config.toml` روشنش کنید:
+
+```toml
+[backends.tinyfish]
+enabled = true
+```
+
+**۵. تصمیم DDG** — `setup` آن را روشن می‌نویسد، ولی بدون pool از این شبکه کپچا می‌گیرد. اگر `pool.txt` خالی است خاموشش کنید:
+
+```toml
+[backends.ddg]
+enabled = false
+```
+
+اگر لینک `vless://`/`trojan://` دارید، خط‌به‌خط در `pool.txt` بگذارید و DDG را روشن نگه دارید.
+
+**۶. اجرا و تأیید:**
+
+```bash
+websearch serve            # ترمینال ۱
+curl -s http://127.0.0.1:7971/healthz
+TOKEN=$(cat ~/.config/websearch/token)
+curl -s "http://127.0.0.1:7971/search?q=test&count=3" -H "Authorization: Bearer $TOKEN"
+websearch doctor --live    # توکن، xray، pool، کلید TinyFish و canary تونل
+```
+
+`/healthz` بدون توکن جواب می‌دهد؛ بقیهٔ مسیرها تا هدر Bearer نیاید `401` می‌دهند.
+
+**۷. سرویس دائمی (systemd کاربری):**
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp deploy/websearch.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now websearch
+```
+
 ## نصب
 
 ```bash
@@ -83,7 +154,8 @@ chmod 600 ~/.config/websearch/env
 
 `pool.txt` را خودتان پر می‌کنید. TinyFish و Mwmbl بدون تونل کار می‌کنند؛ pool فقط برای
 بک‌اند اختیاری DDG و مسیرهای پشت فیلتر لازم است. بدون pool، DDG از این شبکه با کپچا
-شکست می‌خورد (`error_code=captcha`، نه لیست خالی) — به همین دلیل در این نصب خاموش است.
+شکست می‌خورد (`error_code=captcha`، نه لیست خالی) — به همین دلیل اگر pool ندارید خاموشش
+کنید (گام ۵ شروع سریع)؛ فایلی که `setup` می‌سازد آن را روشن دارد.
 
 ## اجرا
 
@@ -128,7 +200,7 @@ max_per_hour = 500       # سقف ساعتی free tier
 enabled = true
 
 [backends.ddg]
-enabled = false          # در این شبکه کپچا می‌دهد؛ در پنجرهٔ سالم روشن کنید
+enabled = true           # پیش‌فرض setup؛ بدون pool در این شبکه کپچا می‌دهد
 ```
 
 - **TinyFish:** بک‌اند اصلی؛ ایندکس زندهٔ گوگل از طریق سرویس خودشان، خروجی ساختاریافته،
@@ -136,7 +208,8 @@ enabled = false          # در این شبکه کپچا می‌دهد؛ در پ
   ۱۲٬۰۰۰/روز. هر جست‌وجو یک درخواست به API است (در خطای شبکه ممکن است یک تلاش مسیر
   دوم اضافه شود) و حداکثر ۱۰ نتیجهٔ صفحهٔ اول را برمی‌گرداند.
 - **Mwmbl:** مستقل و بدون کلید؛ fallback وقتی TinyFish کلید/سهمیه ندارد.
-- **DDG:** بدون کلید ولی از این شبکه کپچا؛ کدش می‌ماند و با `enabled=true` برمی‌گردد.
+- **DDG:** بدون کلید ولی از این شبکه کپچا؛ کدش می‌ماند. `setup` روشنش می‌نویسد، پس بدون
+  pool خاموشش کنید.
 
 ### مسیر خروج
 
@@ -235,8 +308,9 @@ websearch doctor --live             # توکن، xray، pool، کلید TinyFish
   (ریست ۰۰:۰۰ UTC)؛ بعد از آن با wallet خالی `quota` می‌گیرید. نتایج خبری
   (`domain_type=news`) اسنیپت نمی‌دهند و این بک‌اند publisher/date را جای آن می‌گذارد.
   کلید در `~/.config/websearch/env` است و باید در صورت چرخش به‌روز شود.
-- **DDG:** بدون کلید ولی از این شبکه کپچا می‌دهد؛ در این نصب خاموش است. اگر در پنجرهٔ
-  سالم روشنش کردید، `min_interval=2s` و یک درخواست هم‌زمان را نگه دارید.
+- **DDG:** بدون کلید ولی از این شبکه کپچا می‌دهد؛ در نصب این ماشین خاموش است، هرچند
+  `setup` پیش‌فرض روشنش می‌نویسد. اگر در پنجرهٔ سالم روشنش کردید، `min_interval=2s` و یک
+  درخواست هم‌زمان را نگه دارید.
 - **Mwmbl:** ایندکس کوچک و انگلیسی‌محور؛ برای کوئری فارسی معمولاً چیزی ندارد و
   `status=ok, count=0` برمی‌گرداند (نه خطا).
 - **تونل:** کانفیگ‌های عمومی اشتراکی هر چند درخواست یک‌بار reset می‌شوند؛ چرخش خودکار
